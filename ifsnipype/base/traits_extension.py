@@ -22,7 +22,6 @@ all of these bugs and they've been fixed in enthought svn repository
 from collections.abc import Sequence
 
 # perform all external trait imports here
-from traits import __version__ as traits_version
 import traits.api as traits
 from traits.api import TraitType, Unicode
 from traits.trait_base import _Undefined
@@ -35,10 +34,6 @@ except ImportError:
     from traits.trait_handlers import NoDefaultSpecified
 
 from pathlib import Path
-from ...utils.filemanip import path_resolve
-
-if traits_version < "3.7.0":
-    raise ImportError("Traits version 3.7.0 or higher must be installed")
 
 IMG_FORMATS = {
     "afni": (".HEAD", ".BRIK"),
@@ -141,6 +136,8 @@ class BasePath(TraitType):
                 self.error(objekt, name, str(value))
 
         if self.resolve:
+            from nipype.utils.filemanip import path_resolve
+
             value = path_resolve(value, strict=self.exists)
 
         if not return_pathlike:

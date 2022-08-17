@@ -22,19 +22,19 @@ import subprocess
 import re
 import copy
 import tempfile
+import logging
 from os.path import join, dirname
 from warnings import warn
 
-from .. import config, logging
-from ..utils.filemanip import (
+from nipype.utils.filemanip import (
     copyfile,
     simplify_list,
     ensure_list,
     get_related_files,
     split_filename,
 )
-from ..utils.misc import human_order_sorted, str2bool
-from .base import (
+from nipype.utils.misc import human_order_sorted
+from ifsnipype.base import (
     TraitedSpec,
     traits,
     Str,
@@ -338,9 +338,10 @@ class DataSink(IOBase):
     # Give obj .inputs and .outputs
     input_spec = DataSinkInputSpec
     output_spec = DataSinkOutputSpec
+    use_hardlink = False
 
     # Initialization method to set up datasink
-    def __init__(self, infields=None, force_run=True, **kwargs):
+    def __init__(self, infields=None, force_run=True, use_hardlink=False, **kwargs):
         """
         Parameters
         ----------
@@ -360,6 +361,8 @@ class DataSink(IOBase):
         self.inputs.trait_set(trait_change_notify=False, **undefined_traits)
         if force_run:
             self._always_run = True
+
+        self.use_hardlink = use_hardlink
 
     # Get destination paths
     def _get_dst(self, src):
@@ -664,7 +667,7 @@ class DataSink(IOBase):
         outputs = self.output_spec().get()
         out_files = []
         # Use hardlink
-        use_hardlink = str2bool(config.get("execution", "try_hard_link_datasink"))
+        use_hardlink = self.use_hardlink
 
         # Set local output directory if specified
         if isdefined(self.inputs.local_copy):

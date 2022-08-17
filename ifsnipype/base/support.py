@@ -8,6 +8,7 @@ Miscellaneous tools to support Interface functionality
 
 """
 import os
+import logging
 from contextlib import AbstractContextManager
 from copy import deepcopy
 from textwrap import wrap
@@ -16,13 +17,10 @@ from datetime import datetime as dt
 from dateutil.parser import parse as parseutc
 import platform
 
-from ... import logging, config
-from ...utils.misc import is_container, rgetcwd
-from ...utils.filemanip import md5, hash_infile
 
-iflogger = logging.getLogger("nipype.interface")
+_iflogger = logging.getLogger("nipype.interface")
 
-HELP_LINEWIDTH = 70
+HELP_LINEWIDTH = 89
 
 
 class RuntimeContext(AbstractContextManager):
@@ -30,7 +28,7 @@ class RuntimeContext(AbstractContextManager):
 
     __slots__ = ("_runtime", "_resmon", "_ignore_exc")
 
-    def __init__(self, resource_monitor=False, ignore_exception=False):
+    def __init__(self, resource_monitor=False, resmon_frequency=1.0, ignore_exception=False):
         """Initialize the context manager object."""
         self._ignore_exc = ignore_exception
         _proc_pid = os.getpid()
@@ -41,11 +39,13 @@ class RuntimeContext(AbstractContextManager):
 
         self._resmon = ResourceMonitor(
             _proc_pid,
-            freq=float(config.get("execution", "resource_monitor_frequency", 1)),
+            freq=resmon_frequency,
         )
 
     def __call__(self, interface, cwd=None, redirect_x=False):
         """Generate a new runtime object."""
+        from nipype.utils.misc import rgetcwd
+
         # Tear-up: get current and prev directories
         _syscwd = rgetcwd(error=False)  # Recover when wd does not exist
         if cwd is None:
@@ -70,8 +70,9 @@ class RuntimeContext(AbstractContextManager):
 
     def __enter__(self):
         """Tear-up the execution of an interface."""
-        if self._runtime.redirect_x:
-            self._runtime.environ["DISPLAY"] = config.get_display()
+        # TODO
+        # if self._runtime.redirect_x:
+        #     self._runtime.environ["DISPLAY"] = config.get_display()
 
         self._runtime.startTime = dt.isoformat(dt.utcnow())
         self._resmon.start()
@@ -172,7 +173,7 @@ class Bunch(object):
 
     def iteritems(self):
         """iterates over bunch attributes as key, value pairs"""
-        iflogger.warning("iteritems is deprecated, use items instead")
+        _iflogger.warning("iteritems is deprecated, use items instead")
         return list(self.items())
 
     def get(self, *args):
@@ -232,6 +233,8 @@ class Bunch(object):
             The md5 hash value of the `dict_withhash`
 
         """
+        from nipype.utils.misc import is_container
+        from nipype.utils.filemanip import md5
 
         infile_list = []
         for key, val in list(self.items()):
@@ -283,6 +286,9 @@ class Bunch(object):
 
 def _hash_bunch_dict(adict, key):
     """Inject file hashes into adict[key]"""
+    from nipype.utils.misc import is_container
+    from nipype.utils.filemanip import hash_infile
+
     stuff = adict[key]
     if not is_container(stuff):
         stuff = [stuff]

@@ -17,8 +17,9 @@ from packaging.version import Version
 
 from traits.trait_errors import TraitError
 from traits.trait_handlers import TraitDictObject, TraitListObject
-from ...utils.filemanip import md5, hash_infile, hash_timestamp
-from .traits_extension import (
+
+from ifsnipype import __version__ as _package_version
+from ifsnipype.base.traits_extension import (
     traits,
     File,
     Str,
@@ -28,10 +29,7 @@ from .traits_extension import (
     OutputMultiObject,
 )
 
-from ... import config, __version__
-
 _float_fmt = "{:.10f}".format
-nipype_version = Version(__version__)
 
 
 class BaseTraitedSpec(traits.HasTraits):
@@ -55,7 +53,7 @@ class BaseTraitedSpec(traits.HasTraits):
     solution to move forward on the refactoring.
     """
 
-    package_version = nipype_version
+    package_version = Version(_package_version)
 
     def __init__(self, **kwargs):
         """Initialize handlers and inputs"""
@@ -238,6 +236,8 @@ class BaseTraitedSpec(traits.HasTraits):
             The md5 hash value of the traited spec
 
         """
+        from nipype.utils.filemanip import md5
+
         list_withhash = []
         list_nofilename = []
         for name, val in sorted(self.trait_get().items()):
@@ -267,8 +267,10 @@ class BaseTraitedSpec(traits.HasTraits):
         return list_withhash, md5(str(list_nofilename).encode()).hexdigest()
 
     def _get_sorteddict(
-        self, objekt, dictwithhash=False, hash_method=None, hash_files=True
+        self, objekt, dictwithhash=False, hash_method="timestamp", hash_files=True
     ):
+        from nipype.utils.filemanip import hash_infile, hash_timestamp
+
         if isinstance(objekt, dict):
             out = []
             for key, val in sorted(objekt.items()):
@@ -306,8 +308,8 @@ class BaseTraitedSpec(traits.HasTraits):
                     and isinstance(objekt, (str, bytes))
                     and os.path.isfile(objekt)
                 ):
-                    if hash_method is None:
-                        hash_method = config.get("execution", "hash_method")
+                    # if hash_method is None:
+                    #     hash_method = config.get("execution", "hash_method")
 
                     if hash_method.lower() == "timestamp":
                         hash = hash_timestamp(objekt)
