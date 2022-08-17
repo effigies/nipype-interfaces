@@ -87,7 +87,7 @@ class BaseInterface(_Interface):
     _additional_metadata = []
     _redirect_x = False
     _references = []
-    resource_monitor = True  # Enabled for this interface IFF enabled in the config
+    resource_monitor = False  # Enabled for this interface IFF enabled in the config
 
     def __init__(
         self, from_file=None, resource_monitor=None, ignore_exception=False, **inputs

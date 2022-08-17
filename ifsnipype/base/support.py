@@ -33,9 +33,9 @@ class RuntimeContext(AbstractContextManager):
         self._ignore_exc = ignore_exception
         _proc_pid = os.getpid()
         if resource_monitor:
-            from ...utils.profiler import ResourceMonitor
+            from nipype.utils.profiler import ResourceMonitor
         else:
-            from ...utils.profiler import ResourceMonitorMock as ResourceMonitor
+            from nipype.utils.profiler import ResourceMonitorMock as ResourceMonitor
 
         self._resmon = ResourceMonitor(
             _proc_pid,

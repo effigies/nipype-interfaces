@@ -26,15 +26,6 @@ import logging
 import subprocess as sp
 import shlex
 
-from nipype.utils.filemanip import (
-    canonicalize_env,
-    get_dependencies,
-    split_filename,
-    which,
-)
-from nipype.utils.subprocess import run_command
-
-
 from ifsnipype.base.traits_extension import traits, isdefined
 from ifsnipype.base.core import BaseInterface
 from ifsnipype.base.specs import (
@@ -43,7 +34,7 @@ from ifsnipype.base.specs import (
     MpiCommandLineInputSpec,
 )
 
-from ifsnipype.support import NipypeInterfaceError
+from ifsnipype.base.support import NipypeInterfaceError
 
 iflogger = logging.getLogger("nipype.interface")
 
@@ -183,6 +174,8 @@ class CommandLine(BaseInterface):
         return getattr(self.inputs, "environ", {})
 
     def version_from_command(self, flag="-v", cmd=None):
+        from nipype.utils.filemanip import canonicalize_env, which
+
         iflogger.warning(
             "version_from_command member of CommandLine was "
             "Deprecated in nipype-1.0.0 and deleted in 1.1.0"
@@ -227,6 +220,12 @@ class CommandLine(BaseInterface):
             raise RuntimeError(
                 "Error raised when interpolating the command line"
             ) from exc
+
+        from nipype.utils.subprocess import run_command
+        from nipype.utils.filemanip import (
+            get_dependencies,
+            which,
+        )
 
         runtime.stdout = None
         runtime.stderr = None
@@ -304,6 +303,8 @@ class CommandLine(BaseInterface):
         retval = getattr(self.inputs, name)
         source_ext = None
         if not isdefined(retval) or "%s" in retval:
+            from nipype.utils.filemanip import split_filename
+
             if not trait_spec.name_source:
                 return retval
 
