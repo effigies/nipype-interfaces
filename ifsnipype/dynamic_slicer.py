@@ -30,7 +30,7 @@ class SlicerCommandLine(CommandLine):
 
     def _grab_xml(self, module):
         cmd = CommandLine(
-            command="Slicer3", resource_monitor=False, args="--launch %s --xml" % module
+            command="Slicer3", args="--launch %s --xml" % module
         )
         ret = cmd.run()
         if ret.runtime.returncode == 0:

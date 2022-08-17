@@ -26,21 +26,11 @@ HELP_LINEWIDTH = 89
 class RuntimeContext(AbstractContextManager):
     """A context manager to run NiPype interfaces."""
 
-    __slots__ = ("_runtime", "_resmon", "_ignore_exc")
+    __slots__ = ("_runtime", "_ignore_exc")
 
-    def __init__(self, resource_monitor=False, resmon_frequency=1.0, ignore_exception=False):
+    def __init__(self, ignore_exception=False):
         """Initialize the context manager object."""
         self._ignore_exc = ignore_exception
-        _proc_pid = os.getpid()
-        if resource_monitor:
-            from nipype.utils.profiler import ResourceMonitor
-        else:
-            from nipype.utils.profiler import ResourceMonitorMock as ResourceMonitor
-
-        self._resmon = ResourceMonitor(
-            _proc_pid,
-            freq=resmon_frequency,
-        )
 
     def __call__(self, interface, cwd=None, redirect_x=False):
         """Generate a new runtime object."""
@@ -61,7 +51,6 @@ class RuntimeContext(AbstractContextManager):
             platform=platform.platform(),
             prevcwd=str(_syscwd),
             redirect_x=redirect_x,
-            resmon=self._resmon.fname or "off",
             returncode=None,
             startTime=None,
             version=interface.version,
@@ -75,7 +64,6 @@ class RuntimeContext(AbstractContextManager):
         #     self._runtime.environ["DISPLAY"] = config.get_display()
 
         self._runtime.startTime = dt.isoformat(dt.utcnow())
-        self._resmon.start()
         # TODO: Perhaps clean-up path and ensure it exists?
         os.chdir(self._runtime.cwd)
         return self._runtime
@@ -87,9 +75,6 @@ class RuntimeContext(AbstractContextManager):
         self._runtime.duration = (
             timediff.days * 86400 + timediff.seconds + timediff.microseconds / 1e6
         )
-        # Collect monitored data
-        for k, v in self._resmon.stop().items():
-            setattr(self._runtime, k, v)
 
         os.chdir(self._runtime.prevcwd)
 

@@ -25,7 +25,6 @@ def test_associated_file(tmpdir):
         subjects_dir=fs.Info.subjectsdir(), subject_id="fsaverage", hemi="lh"
     )
     fssrc.base_dir = tmpdir.strpath
-    fssrc.resource_monitor = False
 
     fsavginfo = fssrc.run().outputs.get()
 

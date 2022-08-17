@@ -95,7 +95,6 @@ class Info(PackageInfo):
         clout = CommandLine(
             "which afni",
             ignore_exception=True,
-            resource_monitor=False,
             terminal_output="allatonce",
         ).run()
         if clout.runtime.returncode != 0:

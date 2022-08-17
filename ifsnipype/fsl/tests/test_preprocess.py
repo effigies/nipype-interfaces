@@ -281,7 +281,6 @@ def test_flirt(setup_flirt):
             "out_matrix_file",
             "in_matrix_file",
             "apply_xfm",
-            "resource_monitor",
             "out_log",
             "save_log",
         ):
