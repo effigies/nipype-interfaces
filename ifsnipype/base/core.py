@@ -75,10 +75,6 @@ class BaseInterface(_Interface):
     _redirect_x: bool
         should be set to ``True`` when the interface requires
         connecting to a ``$DISPLAY`` (default is ``False``).
-    resource_monitor: bool
-        If ``False``, prevents resource-monitoring this interface
-        If ``True`` monitoring will be enabled IFF the general
-        Nipype config is set on (``resource_monitor = true``).
 
     """
 
@@ -87,10 +83,9 @@ class BaseInterface(_Interface):
     _additional_metadata = []
     _redirect_x = False
     _references = []
-    resource_monitor = False  # Enabled for this interface IFF enabled in the config
 
     def __init__(
-        self, from_file=None, resource_monitor=None, ignore_exception=False, **inputs
+        self, from_file=None, ignore_exception=False, **inputs
     ):
         if not self.input_spec:
             raise Exception("No input_spec in class: %s" % self.__class__.__name__)
@@ -106,9 +101,6 @@ class BaseInterface(_Interface):
         self.inputs.trait_set(**inputs)
 
         self.ignore_exception = ignore_exception
-
-        if resource_monitor is not None:
-            self.resource_monitor = resource_monitor
 
         if from_file is not None:
             self.load_inputs_from_json(from_file, overwrite=True)
@@ -294,7 +286,6 @@ class BaseInterface(_Interface):
         # TODO: Remove nipype dependency on indirectory
         from nipype.utils.filemanip import indirectory
         rtc = RuntimeContext(
-            resource_monitor=self.resource_monitor,
             ignore_exception=ignore_exception
             if ignore_exception is not None
             else self.ignore_exception,
@@ -472,10 +463,8 @@ class SimpleInterface(BaseInterface):
 
     """
 
-    def __init__(self, from_file=None, resource_monitor=None, **inputs):
-        super(SimpleInterface, self).__init__(
-            from_file=from_file, resource_monitor=resource_monitor, **inputs
-        )
+    def __init__(self, from_file=None, **inputs):
+        super().__init__(from_file=from_file, **inputs)
         self._results = {}
 
     def _list_outputs(self):

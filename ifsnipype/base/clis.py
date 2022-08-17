@@ -537,7 +537,6 @@ class PackageInfo:
                 try:
                     clout = CommandLine(
                         command=klass.version_cmd,
-                        resource_monitor=False,
                         terminal_output="allatonce",
                     ).run()
                 except IOError:

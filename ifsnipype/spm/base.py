@@ -204,7 +204,7 @@ class Info(PackageInfo):
 
             return {"name": klass._name, "path": klass._path, "release": klass._version}
         logger.debug("matlab command or path has changed. recomputing version.")
-        mlab = MatlabCommand(matlab_cmd=matlab_cmd, resource_monitor=False)
+        mlab = MatlabCommand(matlab_cmd=matlab_cmd)
         mlab.inputs.mfile = False
         if paths:
             mlab.inputs.paths = paths
@@ -341,7 +341,6 @@ class SPMCommand(BaseInterface):
             matlab_cmd=self.inputs.matlab_cmd,
             mfile=self.inputs.mfile,
             paths=self.inputs.paths,
-            resource_monitor=False,
         )
         self.mlab.inputs.script_file = (
             "pyscript_%s.m" % self.__class__.__name__.split(".")[-1].lower()

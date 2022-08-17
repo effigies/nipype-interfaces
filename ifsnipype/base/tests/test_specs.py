@@ -441,7 +441,6 @@ def test_filecopy_info():
 
     class DerivedInterface(nib.BaseInterface):
         input_spec = InputSpec
-        resource_monitor = False
 
         def normalize_filenames(self):
             """A mock normalize_filenames for freesurfer interfaces that have one"""
