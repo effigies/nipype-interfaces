@@ -503,7 +503,7 @@ def _check_mandatory_inputs(obj):
     for name, spec in list(
         obj.inputs.traits(mandatory=None, transient=None).items()
     ):
-        obj._check_requires(obj, spec, name, getattr(obj.inputs, name))
+        _check_requires(obj, spec, name, getattr(obj.inputs, name))
 
 def _check_version_requirements(obj, trait_object, permissive=False):
     """Raises an exception on version mismatch

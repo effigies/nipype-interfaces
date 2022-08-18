@@ -32,6 +32,7 @@ from ifsnipype.base.specs import (
     CommandLineInputSpec,
     StdOutCommandLineInputSpec,
     MpiCommandLineInputSpec,
+    _check_mandatory_inputs,
 )
 
 from ifsnipype.base.support import NipypeInterfaceError
@@ -137,7 +138,7 @@ class CommandLine(BaseInterface):
     def cmdline(self):
         """`command` plus any arguments (args)
         validates arguments and generates command line"""
-        self._check_mandatory_inputs()
+        _check_mandatory_inputs(self)
         allargs = [self._cmd_prefix + self.cmd] + self._parse_inputs()
         return " ".join(allargs)
 
@@ -245,11 +246,10 @@ class CommandLine(BaseInterface):
             )
 
         runtime.command_path = cmd_path
-        runtime.dependencies = (
-            get_dependencies(executable_name, runtime.environ)
-            if self._ldd
-            else "<skipped>"
-        )
+
+        if self._ldd:
+            runtime.dependencies = get_dependencies(executable_name, runtime.environ)
+
         runtime = run_command(
             runtime,
             output=self.terminal_output,

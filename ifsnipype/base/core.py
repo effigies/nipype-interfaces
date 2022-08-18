@@ -1,18 +1,15 @@
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 """Base interface definitions and infrastructure."""
-
 import os
 import logging
-
-import simplejson as json
+from dataclasses import dataclass
 from traits.trait_errors import TraitError
 
-from ifsnipype.base.traits_extension import isdefined, Undefined
-from ifsnipype.base.specs import BaseInterfaceInputSpec as _BaseInterfaceInputSpec
+from ifsnipype.base.specs import BaseInterfaceInputSpec as _BaseInterfaceInputSpec, traits
 from ifsnipype.base.support import (
     RuntimeContext,
-    InterfaceResult,
+    Runtime
 )
 
 _iflogger = logging.getLogger("nipype.interface")
@@ -297,3 +294,12 @@ class SimpleInterface(BaseInterface):
 
     def _list_outputs(self):
         return self._results
+
+
+@dataclass
+class InterfaceResult:
+    """Store the result of executing a particular Interface."""
+    interface: BaseInterface
+    runtime: Runtime
+    inputs: traits.HasTraits
+    outputs: traits.HasTraits
