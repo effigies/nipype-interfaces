@@ -443,3 +443,168 @@ def get_filecopy_info(cls):
     for name, spec in sorted(inputs.traits(**metadata).items()):
         info.append(dict(key=name, copy=spec.copyfile))
     return info
+
+
+def _check_requires(obj, spec, name, value):
+    """check if required inputs are satisfied"""
+    if spec.requires:
+        values = [
+            not isdefined(getattr(obj.inputs, field)) for field in spec.requires
+        ]
+        if any(values) and isdefined(value):
+            if len(values) > 1:
+                fmt = (
+                    "%s requires values for inputs %s because '%s' is set. "
+                    "For a list of required inputs, see %s.help()"
+                )
+            else:
+                fmt = (
+                    "%s requires a value for input %s because '%s' is set. "
+                    "For a list of required inputs, see %s.help()"
+                )
+            msg = fmt % (
+                obj.__class__.__name__,
+                ", ".join("'%s'" % req for req in spec.requires),
+                name,
+                obj.__class__.__name__,
+            )
+            raise ValueError(msg)
+
+def _check_xor(obj, spec, name, value):
+    """check if mutually exclusive inputs are satisfied"""
+    if spec.xor:
+        values = [isdefined(getattr(obj.inputs, field)) for field in spec.xor]
+        if not any(values) and not isdefined(value):
+            msg = (
+                "%s requires a value for one of the inputs '%s'. "
+                "For a list of required inputs, see %s.help()"
+                % (
+                    obj.__class__.__name__,
+                    ", ".join(spec.xor),
+                    obj.__class__.__name__,
+                )
+            )
+            raise ValueError(msg)
+
+def _check_mandatory_inputs(obj):
+    """Raises an exception if a mandatory input is Undefined"""
+    for name, spec in list(obj.inputs.traits(mandatory=True).items()):
+        value = getattr(obj.inputs, name)
+        _check_xor(obj, spec, name, value)
+        if not isdefined(value) and spec.xor is None:
+            msg = (
+                "%s requires a value for input '%s'. "
+                "For a list of required inputs, see %s.help()"
+                % (obj.__class__.__name__, name, obj.__class__.__name__)
+            )
+            raise ValueError(msg)
+        if isdefined(value):
+            _check_requires(obj, spec, name, value)
+    for name, spec in list(
+        obj.inputs.traits(mandatory=None, transient=None).items()
+    ):
+        obj._check_requires(obj, spec, name, getattr(obj.inputs, name))
+
+def _check_version_requirements(obj, trait_object, permissive=False):
+    """Raises an exception on version mismatch
+
+    Set the ``permissive`` attribute to True to suppress warnings and exceptions.
+    This is currently only used in __init__ to silently identify unavailable
+    traits.
+    """
+    if not obj.version:
+        # TODO: Raise error if versions are to be enforced and this one is unknown
+        # if str2bool(config.get("execution", "stop_on_unknown_version")):
+        #     raise ValueError(
+        #         "Interface %s has no version information" % obj.__class__.__name__
+        #     )
+        return []
+
+    from nipype import config, LooseVersion
+
+    unavailable_traits = []
+    # check minimum version
+    check = dict(min_ver=lambda t: t is not None)
+    names = trait_object.trait_names(**check)
+
+    if names and obj.version:
+        version = LooseVersion(str(obj.version))
+        for name in names:
+            min_ver = LooseVersion(str(trait_object.traits()[name].min_ver))
+            try:
+                too_old = min_ver > version
+            except TypeError as err:
+                msg = (
+                    f"Nipype cannot validate the package version {version!r} for "
+                    f"{obj.__class__.__name__}. Trait {name} requires version >={min_ver}."
+                )
+                if not permissive:
+                    _iflogger.warning(f"{msg}. Please verify validity.")
+                if config.getboolean("execution", "stop_on_unknown_version"):
+                    raise ValueError(msg) from err
+                continue
+            if too_old:
+                unavailable_traits.append(name)
+                if not isdefined(getattr(trait_object, name)):
+                    continue
+                if not permissive:
+                    raise Exception(
+                        "Trait %s (%s) (version %s < required %s)"
+                        % (name, obj.__class__.__name__, version, min_ver)
+                    )
+
+    # check maximum version
+    check = dict(max_ver=lambda t: t is not None)
+    names = trait_object.trait_names(**check)
+    if names and obj.version:
+        version = LooseVersion(str(obj.version))
+        for name in names:
+            max_ver = LooseVersion(str(trait_object.traits()[name].max_ver))
+            try:
+                too_new = max_ver < version
+            except TypeError as err:
+                msg = (
+                    f"Nipype cannot validate the package version {version!r} for "
+                    f"{obj.__class__.__name__}. Trait {name} requires version <={max_ver}."
+                )
+                if not permissive:
+                    _iflogger.warning(f"{msg}. Please verify validity.")
+                if config.getboolean("execution", "stop_on_unknown_version"):
+                    raise ValueError(msg) from err
+                continue
+            if too_new:
+                unavailable_traits.append(name)
+                if not isdefined(getattr(trait_object, name)):
+                    continue
+                if not permissive:
+                    raise Exception(
+                        "Trait %s (%s) (version %s > required %s)"
+                        % (name, obj.__class__.__name__, version, max_ver)
+                    )
+    return unavailable_traits
+
+def load_inputs_from_json(obj, json_file, overwrite=True):
+    """
+    A convenient way to load pre-set inputs from a JSON file.
+    """
+
+    with open(json_file) as fhandle:
+        inputs_dict = json.load(fhandle)
+
+    def_inputs = []
+    if not overwrite:
+        def_inputs = list(obj.inputs.get_traitsfree().keys())
+
+    new_inputs = list(set(list(inputs_dict.keys())) - set(def_inputs))
+    for key in new_inputs:
+        if hasattr(obj.inputs, key):
+            setattr(obj.inputs, key, inputs_dict[key])
+
+def save_inputs_to_json(obj, json_file):
+    """
+    A convenient way to save current inputs to a JSON file.
+    """
+    inputs = obj.inputs.get_traitsfree()
+    _iflogger.debug("saving inputs %s", inputs)
+    with open(json_file, "w") as fhandle:
+        json.dump(inputs, fhandle, indent=4, ensure_ascii=False)
