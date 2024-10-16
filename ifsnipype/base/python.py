@@ -35,11 +35,11 @@ class LibraryBaseInterface(BaseInterface):
     def __init__(self, check_import=True, *args, **kwargs):
         super(LibraryBaseInterface, self).__init__(*args, **kwargs)
         if check_import:
-            import pkgutil
+            import importlib.util
 
             failed_imports = []
             for pkg in (self._pkg,) + tuple(self.imports):
-                if pkgutil.find_loader(pkg) is None:
+                if importlib.util.find_spec(pkg) is None:
                     failed_imports.append(pkg)
             if failed_imports:
                 iflogger.warning(
